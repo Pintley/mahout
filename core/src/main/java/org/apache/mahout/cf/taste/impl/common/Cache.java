@@ -20,6 +20,8 @@ package org.apache.mahout.cf.taste.impl.common;
 import com.google.common.base.Preconditions;
 import org.apache.mahout.cf.taste.common.TasteException;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.Iterator;
 
 /**
