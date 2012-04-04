@@ -17,10 +17,10 @@
 
 package org.apache.mahout.cf.taste.impl.common;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.common.base.Preconditions;
 import org.apache.mahout.cf.taste.common.TasteException;
-
-import java.util.Iterator;
 
 /**
  * <p>
@@ -28,11 +28,11 @@ import java.util.Iterator;
  * instead the caller supplies the instance with an implementation of {@link Retriever} which can load the
  * value for a given key.
  * </p>
- *
+ * 
  * <p>
- * The cache does not support {@code null} keys.
+ * The cache does not support <code>null</code> keys.
  * </p>
- *
+ * 
  * <p>
  * Thanks to Amila Jayasooriya for helping evaluate performance of the rewrite of this class, as part of a
  * Google Summer of Code 2007 project.
@@ -41,6 +41,9 @@ import java.util.Iterator;
 public final class Cache<K,V> implements Retriever<K,V> {
 
   private static final Object NULL = new Object();
+  private final ReentrantReadWriteLock semaphore = new ReentrantReadWriteLock();
+  private final Lock readLock = semaphore.readLock();
+  private final Lock writeLock = semaphore.writeLock();
   
   private final FastMap<K,V> cache;
   private final Retriever<? super K,? extends V> retriever;
@@ -88,8 +91,12 @@ public final class Cache<K,V> implements Retriever<K,V> {
   @Override
   public V get(K key) throws TasteException {
     V value;
-    synchronized (cache) {
+    readLock.lock();
+    try {
       value = cache.get(key);
+    }
+    finally {
+      readLock.unlock();
     }
     if (value == null) {
       return getAndCacheValue(key);
@@ -106,38 +113,12 @@ public final class Cache<K,V> implements Retriever<K,V> {
    *          cache key
    */
   public void remove(K key) {
-    synchronized (cache) {
+    writeLock.lock();
+    try {
       cache.remove(key);
     }
-  }
-
-  /**
-   * Clears all cache entries whose key matches the given predicate.
-   */
-  public void removeKeysMatching(MatchPredicate<K> predicate) {
-    synchronized (cache) {
-      Iterator<K> it = cache.keySet().iterator();
-      while (it.hasNext()) {
-        K key = it.next();
-        if (predicate.matches(key)) {
-          it.remove();
-        }
-      }
-    }
-  }
-
-  /**
-   * Clears all cache entries whose value matches the given predicate.
-   */
-  public void removeValueMatching(MatchPredicate<V> predicate) {
-    synchronized (cache) {
-      Iterator<V> it = cache.values().iterator();
-      while (it.hasNext()) {
-        V value = it.next();
-        if (predicate.matches(value)) {
-          it.remove();
-        }
-      }
+    finally {
+      writeLock.unlock();
     }
   }
   
@@ -147,18 +128,23 @@ public final class Cache<K,V> implements Retriever<K,V> {
    * </p>
    */
   public void clear() {
-    synchronized (cache) {
+    writeLock.lock();
+    try {
       cache.clear();
+    }
+    finally {
+      writeLock.unlock();
     }
   }
   
   private V getAndCacheValue(K key) throws TasteException {
     V value = retriever.get(key);
-    if (value == null) {
-      value = (V) NULL;
+    writeLock.lock();
+    try {
+      cache.put(key, value == null ? (V) NULL : value);
     }
-    synchronized (cache) {
-      cache.put(key, value);
+    finally {
+      writeLock.unlock();
     }
     return value;
   }
@@ -166,13 +152,6 @@ public final class Cache<K,V> implements Retriever<K,V> {
   @Override
   public String toString() {
     return "Cache[retriever:" + retriever + ']';
-  }
-
-  /**
-   * Used by {#link #removeKeysMatching(Object)} to decide things that are matching.
-   */
-  public interface MatchPredicate<T> {
-    boolean matches(T thing);
   }
   
 }
