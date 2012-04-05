@@ -45,9 +45,6 @@ public final class Cache<K,V> implements Retriever<K,V> {
   private final FastMap<K,V> cache;
   private final Retriever<? super K,? extends V> retriever;
   
-  ReentrantReadWriteLock semaphore = new ReentrantReadWriteLock();
-  Lock readLock = semaphore.readLock();
-  Lock writeLock = semaphore.writeLock();
   /**
    * <p>
    * Creates a new cache based on the given {@link Retriever}.
@@ -91,12 +88,8 @@ public final class Cache<K,V> implements Retriever<K,V> {
   @Override
   public V get(K key) throws TasteException {
     V value;
-    readLock.lock();
-    try {
+    synchronized (cache) {
       value = cache.get(key);
-    }
-    finally {
-      readLock.unlock();
     }
     if (value == null) {
       return getAndCacheValue(key);
@@ -113,12 +106,8 @@ public final class Cache<K,V> implements Retriever<K,V> {
    *          cache key
    */
   public void remove(K key) {
-    readLock.lock();
-    try {
+    synchronized (cache) {
       cache.remove(key);
-    }
-    finally {
-      readLock.unlock();
     }
   }
 
@@ -126,8 +115,7 @@ public final class Cache<K,V> implements Retriever<K,V> {
    * Clears all cache entries whose key matches the given predicate.
    */
   public void removeKeysMatching(MatchPredicate<K> predicate) {
-    writeLock.lock();
-    try {
+    synchronized (cache) {
       Iterator<K> it = cache.keySet().iterator();
       while (it.hasNext()) {
         K key = it.next();
@@ -136,17 +124,13 @@ public final class Cache<K,V> implements Retriever<K,V> {
         }
       }
     }
-    finally {
-      writeLock.unlock();
-    }
   }
 
   /**
    * Clears all cache entries whose value matches the given predicate.
    */
   public void removeValueMatching(MatchPredicate<V> predicate) {
-    writeLock.lock();
-    try {
+    synchronized (cache) {
       Iterator<V> it = cache.values().iterator();
       while (it.hasNext()) {
         V value = it.next();
@@ -154,9 +138,6 @@ public final class Cache<K,V> implements Retriever<K,V> {
           it.remove();
         }
       }
-    }
-    finally {
-      writeLock.unlock();
     }
   }
   
@@ -166,12 +147,8 @@ public final class Cache<K,V> implements Retriever<K,V> {
    * </p>
    */
   public void clear() {
-    writeLock.lock();
-    try {
+    synchronized (cache) {
       cache.clear();
-    }
-    finally {
-      writeLock.unlock();
     }
   }
   
@@ -180,12 +157,8 @@ public final class Cache<K,V> implements Retriever<K,V> {
     if (value == null) {
       value = (V) NULL;
     }
-    writeLock.lock();
-    try {
+    synchronized (cache) {
       cache.put(key, value);
-    }
-    finally {
-      writeLock.unlock();
     }
     return value;
   }
