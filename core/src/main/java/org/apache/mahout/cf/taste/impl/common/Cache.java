@@ -21,6 +21,7 @@ import com.google.common.base.Preconditions;
 import org.apache.mahout.cf.taste.common.TasteException;
 
 import java.util.Iterator;
+import java.util.HashMap;
 
 /**
  * <p>
@@ -42,7 +43,7 @@ public final class Cache<K,V> implements Retriever<K,V> {
 
   private static final Object NULL = new Object();
   
-  private final FastMap<K,V> cache;
+  private final HashMap<K,V> cache;
   private final Retriever<? super K,? extends V> retriever;
   
   /**
@@ -70,7 +71,7 @@ public final class Cache<K,V> implements Retriever<K,V> {
   public Cache(Retriever<? super K,? extends V> retriever, int maxEntries) {
     Preconditions.checkArgument(retriever != null, "retriever is null");
     Preconditions.checkArgument(maxEntries >= 1, "maxEntries must be at least 1");
-    cache = new FastMap<K, V>(11, maxEntries);
+    cache = new HashMap<K, V>(Math.min(1, maxEntries/4), (int)(maxEntries*1.1));
     this.retriever = retriever;
   }
   
