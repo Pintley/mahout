@@ -21,13 +21,14 @@ import java.util.Collection;
 
 import org.apache.mahout.cf.taste.common.Refreshable;
 import org.apache.mahout.cf.taste.common.TasteException;
-import org.apache.mahout.cf.taste.impl.common.Cache;
-import org.apache.mahout.cf.taste.impl.common.FullRunningAverage;
-import org.apache.mahout.cf.taste.impl.common.Retriever;
-import org.apache.mahout.cf.taste.impl.common.RunningAverage;
+//import org.apache.mahout.cf.taste.impl.common.Cache;
+//import org.apache.mahout.cf.taste.impl.common.FullRunningAverage;
+//import org.apache.mahout.cf.taste.impl.common.Retriever;
+//import org.apache.mahout.cf.taste.impl.common.RunningAverage;
 import org.apache.mahout.cf.taste.model.DataModel;
-import org.apache.mahout.cf.taste.model.PreferenceArray;
+//import org.apache.mahout.cf.taste.model.PreferenceArray;
 import org.apache.mahout.cf.taste.similarity.PreferenceInferrer;
+import com.pintley.MemcacheDataModel;
 
 /**
  * <p>
@@ -38,28 +39,30 @@ import org.apache.mahout.cf.taste.similarity.PreferenceInferrer;
  */
 public final class AveragingPreferenceInferrer implements PreferenceInferrer {
   
-  private static final Float ZERO = 0.0f;
+  //private static final Float ZERO = 0.0f;
   
-  private final DataModel dataModel;
-  private final Cache<Long,Float> averagePreferenceValue;
+  private final MemcacheDataModel dataModel;
+  //private final Cache<Long,Float> cache;
   
   public AveragingPreferenceInferrer(DataModel dataModel) throws TasteException {
-    this.dataModel = dataModel;
-    Retriever<Long,Float> retriever = new PrefRetriever();
-    averagePreferenceValue = new Cache<Long,Float>(retriever, dataModel.getNumUsers());
+    this.dataModel = (MemcacheDataModel)dataModel;
+    //Retriever<Long,Float> retriever = new PrefRetriever();
+    //cache = new Cache<Long,Float>(retriever, dataModel.getNumUsers());
     refresh(null);
   }
   
   @Override
   public float inferPreference(long userID, long itemID) throws TasteException {
-    return averagePreferenceValue.get(userID);
+    //return cache.get(userID);
+    return dataModel.getAveragePreference(userID);
   }
   
   @Override
   public void refresh(Collection<Refreshable> alreadyRefreshed) {
-    averagePreferenceValue.clear();
+    //cache.clear();
   }
   
+  /*
   private final class PrefRetriever implements Retriever<Long,Float> {
     
     @Override
@@ -76,6 +79,7 @@ public final class AveragingPreferenceInferrer implements PreferenceInferrer {
       return (float) average.getAverage();
     }
   }
+  */
   
   @Override
   public String toString() {
