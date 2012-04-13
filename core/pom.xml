@@ -124,6 +124,14 @@
   </build>
 
   <dependencies>
+      <!-- custom Pintley module -->
+      <dependency>
+        <groupId>com.pintley</groupId>
+        <artifactId>pintley-recommender</artifactId>
+        <version>0.9.5</version>
+        <systemPath>/Users/shan/Dropbox/dev/pintley-recommendations/pintley/build/jar/pintley-recommender.jar</systemPath>
+		<scope>system</scope>
+      </dependency>      
   
     <!-- our modules -->
     <dependency>
